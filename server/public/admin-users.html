@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Пользователи</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 80%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px 0;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Список пользователей</h1>
+
+    <table id="users-table">
+      <thead>
+        <tr>
+          <th>Имя</th>
+          <th>Email</th>
+          <th>Роль</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      // Загружаем список пользователей с сервера
+      async function loadUsers() {
+        const response = await fetch("/api/users");
+        const users = await response.json();
+
+        const tableBody = document.querySelector("#users-table tbody");
+        tableBody.innerHTML = ""; // Очищаем таблицу перед добавлением новых данных
+
+        users.forEach((user) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td>${user.role}</td>
+        `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      window.onload = loadUsers;
+    </script>
+  </body>
+</html>

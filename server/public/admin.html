@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Товары</title>
+    <link rel="stylesheet" href="admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <h1>Изменение товаров</h1>
+
+    <!-- Форма для добавления/обновления товара -->
+    <form id="addProductForm">
+      <label for="title">Название:</label>
+      <input type="text" id="title" name="title" required />
+
+      <label for="description">Описание:</label>
+      <textarea id="description" name="description" required></textarea>
+
+      <label for="price">Цена:</label>
+      <input type="number" id="price" name="price" required />
+
+      <label for="count">Количество:</label>
+      <input type="number" id="count" name="count" required />
+
+      <label for="image">Изображение:</label>
+      <input type="file" id="image" name="image" accept="image/*" required />
+
+      <img
+        id="imagePreview"
+        style="display: none"
+        width="100"
+        alt="Image Preview"
+      />
+
+      <label for="category">Категория:</label>
+      <select id="category" name="category" required>
+        <option value="Торты">Торты</option>
+        <option value="Пироги">Пироги</option>
+        <option value="Фрукты в шоколаде">Фрукты в шоколаде</option>
+        <option value="Десерты">Десерты</option>
+      </select>
+
+      <label for="ingredients">Ингредиенты (разделяйте запятой):</label>
+      <input
+        type="text"
+        id="ingredients"
+        name="ingredients"
+        required
+        placeholder="Например: орехи, шоколад"
+      />
+
+      <button type="submit">Добавить товар</button>
+    </form>
+
+    <h2>Список товаров</h2>
+    <div id="productsContainer">
+      <!-- Продукты будут отображаться здесь -->
+    </div>
+
+    <!-- Модальное окно для редактирования товара -->
+    <div id="editProductModal" style="display: none">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Редактировать товар</h2>
+        <form id="editProductForm">
+          <input type="hidden" id="editId" name="id" />
+          <input
+            type="text"
+            id="editTitle"
+            name="title"
+            placeholder="Название товара"
+          />
+          <textarea
+            id="editDescription"
+            name="description"
+            placeholder="Описание товара"
+          ></textarea>
+          <input type="number" id="editPrice" name="price" placeholder="Цена" />
+          <input
+            type="number"
+            id="editCount"
+            name="count"
+            placeholder="Количество"
+          />
+          <select id="editCategory" name="category">
+            <option value="Торты">Торты</option>
+            <option value="Пироги">Пироги</option>
+            <option value="Фрукты в шоколаде">Фрукты в шоколаде</option>
+            <option value="Десерты">Десерты</option>
+          </select>
+          <input type="file" id="editImage" name="image" />
+          <img
+            id="imagePreview"
+            style="display: none"
+            width="100"
+            alt="Image Preview"
+          />
+          <textarea
+            id="editIngredients"
+            name="ingredients"
+            placeholder="Ингредиенты (через запятую)"
+          ></textarea>
+          <button type="submit">Сохранить изменения</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Обработчик для предварительного просмотра изображения (добавление товара)
+      document
+        .getElementById("image")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          const reader = new FileReader();
+
+          reader.onloadend = function () {
+            const imagePreview = document.getElementById("imagePreview");
+            imagePreview.src = reader.result;
+            imagePreview.style.display = "block"; // Показать изображение
+          };
+
+          if (file) {
+            reader.readAsDataURL(file); // Загружаем изображение как DataURL
+          }
+        });
+
+      // Функция для загрузки и отображения товаров
+      async function loadProducts() {
+        try {
+          const response = await axios.get("/api/products");
+          const products = response.data;
+          const productsContainer =
+            document.getElementById("productsContainer");
+          productsContainer.innerHTML = ""; // Очистим контейнер перед добавлением новых товаров
+
+          products.forEach((product) => {
+            const productElement = document.createElement("div");
+            productElement.classList.add("product-item");
+            productElement.innerHTML = `
+              <h3>${product.title}</h3>
+              <p>${product.description}</p>
+              <p>Цена: ${product.price} T</p>
+              <p>Количество: ${product.count} шт.</p>
+              <img src="http://localhost:5000${product.imageUrl}" alt="${product.title}" width="100" />
+              <button onclick="editProduct(${product._id})">Редактировать</button>
+              <button onclick="deleteProduct(${product._id})">Удалить</button>
+            `;
+            productsContainer.appendChild(productElement);
+          });
+        } catch (error) {
+          console.error("Ошибка при загрузке товаров:", error);
+        }
+      }
+
+      // Функция для редактирования товара
+      async function editProduct(productId) {
+        try {
+          console.log(`Запрос товара с ID: ${productId}`); // Отладочное сообщение
+          const response = await axios.get(`/api/products/${productId}`);
+          const product = response.data;
+
+          // Проверяем полученные данные
+          if (!product) {
+            throw new Error("Товар не найден.");
+          }
+
+          // Заполнение формы данными
+          document.getElementById("editTitle").value = product.title || "";
+          document.getElementById("editDescription").value =
+            product.description || "";
+          document.getElementById("editPrice").value = product.price || 0;
+          document.getElementById("editCount").value = product.count || 0;
+          document.getElementById("editCategory").value =
+            product.category || "";
+
+          // Показать изображение, если оно есть
+          const imagePreview = document.getElementById("imagePreview");
+          if (product.imageUrl) {
+            imagePreview.src = `http://localhost:5000${product.imageUrl}`;
+            imagePreview.style.display = "block";
+          } else {
+            imagePreview.style.display = "none";
+          }
+
+          // Показать модальное окно
+          document.getElementById("editProductModal").style.display = "block";
+
+          // Обновление логики отправки формы
+          document.getElementById("editProductForm").onsubmit = async function (
+            event
+          ) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const updatedProductData = {
+              title: formData.get("title"),
+              description: formData.get("description"),
+              price: Number(formData.get("price")),
+              count: Number(formData.get("count")),
+              category: formData.get("category"),
+            };
+
+            try {
+              const response = await axios.put(
+                `/api/products/${productId}`,
+                updatedProductData
+              );
+              if (response.status === 200) {
+                alert("Товар обновлен!");
+                loadProducts(); // Перезагрузка списка товаров
+                closeModal(); // Закрытие модального окна
+              }
+            } catch (error) {
+              console.error("Ошибка при обновлении товара:", error);
+              alert("Ошибка при обновлении товара.");
+            }
+          };
+        } catch (error) {
+          console.error(
+            "Ошибка при загрузке товара для редактирования:",
+            error
+          );
+          alert("Ошибка при загрузке данных товара.");
+        }
+      }
+
+      // Функция для удаления товара
+      async function deleteProduct(productId) {
+        if (confirm("Вы уверены, что хотите удалить этот товар?")) {
+          try {
+            const response = await axios.delete(`/api/products/${productId}`);
+            if (response.status === 200) {
+              alert("Товар удален!");
+              loadProducts(); // Перезагружаем список товаров
+            }
+          } catch (error) {
+            console.error("Ошибка при удалении товара:", error);
+            alert("Ошибка при удалении товара.");
+          }
+        }
+      }
+
+      // Функция для закрытия модального окна
+      function closeModal() {
+        document.getElementById("editProductModal").style.display = "none";
+      }
+
+      // Загрузить список товаров при загрузке страницы
+      loadProducts();
+    </script>
+  </body>
+</html>

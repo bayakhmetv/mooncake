@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Заказы</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 80%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px 0;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Список заказов</h1>
+
+    <table id="orders-table">
+      <thead>
+        <tr>
+          <th>Клиент</th>
+          <th>Адрес</th>
+          <th>О заказе</th>
+          <th>Цена</th>
+          <th>Статус</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      // Загружаем список заказов с сервера
+      async function loadOrders() {
+        const response = await fetch("/api/orders/all");
+        const orders = await response.json();
+
+        const tableBody = document.querySelector("#orders-table tbody");
+        tableBody.innerHTML = ""; // Очищаем таблицу перед добавлением новых данных
+
+        orders.forEach((order) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${order.name}</td>
+            <td>${order.address}</td>
+            <td>
+    ${order.cartItems
+      .map(
+        (item) => `${item.title} (Кол-во: ${item.count}, Цена: ${item.price}₸)`
+      )
+      .join("<br>")}
+  </td>
+            <td>${order.totalPrice}</td>
+            <td>${order.status}</td>
+            <td>
+              <button onclick="editOrder('${order._id}')">Изменить</button>
+              <button onclick="deleteOrder('${order._id}')">Удалить</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      // Функции для добавления, удаления и редактирования заказов
+      async function editOrder(orderId) {
+        const status = prompt("Введите новый статус заказа");
+
+        const response = await fetch(`/api/orders/${orderId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+
+        const updatedOrder = await response.json();
+        alert("Статус заказа обновлен");
+        loadOrders(); // Перезагружаем список заказов
+      }
+
+      async function deleteOrder(orderId) {
+        if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
+          const response = await fetch(`/api/orders/${orderId}`, {
+            method: "DELETE",
+          });
+
+          const data = await response.json();
+          alert(data.message);
+          loadOrders(); // Перезагружаем список заказов
+        }
+      }
+
+      // Загружаем заказы при загрузке страницы
+      window.onload = loadOrders;
+    </script>
+  </body>
+</html>

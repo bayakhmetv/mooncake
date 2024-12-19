@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <!-- Боковая навигация -->
+    <div class="sidebar">
+      <div class="logo">
+        <img src="images/logo.png" alt="Logo" />
+      </div>
+      <ul class="nav">
+        <li><a href="/admin-users">Пользователи</a></li>
+        <li><a href="/admin-orders">Заказы</a></li>
+        <li><a href="/admin-crud">Товары</a></li>
+      </ul>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="content">
+      <div class="stats">
+        <div class="block">
+          <h2>Клиенты</h2>
+          <p id="clients-count">0</p>
+        </div>
+        <div class="block">
+          <h2>Заказы</h2>
+          <p id="orders-count">0</p>
+        </div>
+        <div class="block">
+          <h2>Продажи</h2>
+          <p id="sales-amount">0 ₸</p>
+        </div>
+      </div>
+      <div class="chart">
+        <h3>Схема продаж за дни</h3>
+        <canvas id="salesChart"></canvas>
+        <!-- График будет отображаться здесь -->
+      </div>
+    </div>
+
+    <script>
+      // Функция для получения данных с сервера и обновления графика
+      const fetchData = async () => {
+        try {
+          const response = await fetch("/api/sales");
+          const data = await response.json();
+          console.log(data);
+
+          // Обновление данных для блока с продажами
+          document.getElementById("clients-count").innerText = data.length; // Пример: количество дней с данными о продажах
+          document.getElementById("orders-count").innerText = data.reduce(
+            (acc, item) => acc + (item.totalOrders || 0),
+            0
+          ); // Общее количество заказов
+          document.getElementById("sales-amount").innerText = `${data.reduce(
+            (acc, item) => acc + item.totalSales,
+            0
+          )} ₸`; // Общее количество продаж
+
+          // Пример создания графика
+          const salesLabels = data.map((item) => item._id); // Даты
+          const salesValues = data.map((item) => item.totalSales); // Сумма продаж
+
+          const ctx = document.getElementById("salesChart").getContext("2d");
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: salesLabels,
+              datasets: [
+                {
+                  label: "Продажи",
+                  data: salesValues,
+                  borderColor: "rgba(75, 192, 192, 1)",
+                  tension: 0.1,
+                },
+              ],
+            },
+          });
+        } catch (err) {
+          console.error("Ошибка при получении данных:", err);
+        }
+      };
+
+      fetchData();
+    </script>
+  </body>
+</html>
